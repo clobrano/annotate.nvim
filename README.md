@@ -11,24 +11,26 @@ Leave typed annotations on exact pieces of code, then hand them to an AI agent a
 
 ## Export format
 
+The export doesn't say the type: types are for you, while reviewing. To include it, use a custom `export.format`.
+
 ````markdown
 ## Annotations (2)
 
-1. **ISSUE**:
-   > ```go
-   > r.Client.Update(ctx, obj)
-   > ```
-   > source: pkg/reconcile.go:4:12-4:36
+* NOTE #1:
+  > ```go
+  > r.Client.Update(ctx, obj)
+  > ```
+  > source: pkg/reconcile.go:4:12-4:36
 
-   Should be a Patch: Update conflicts with the status writer.
+  Should be a Patch: Update conflicts with the status writer.
 
-2. **QUESTION**:
-   > ```go
-   > Timeout *metav1.Duration
-   > ```
-   > source: https://github.com/org/repo/blob/3f2a9c1/api/v1/types.go#L40
+* NOTE #2:
+  > ```go
+  > Timeout *metav1.Duration
+  > ```
+  > source: https://github.com/org/repo/blob/3f2a9c1/api/v1/types.go#L40
 
-   Is a default needed here?
+  Is a default needed here?
 ````
 
 Source formats:
@@ -100,6 +102,7 @@ require("annotate").setup({
   data_dir = vim.fn.stdpath("data") .. "/annotate",
   export = {
     header = "## Annotations (%d)", -- or false
+    label = "NOTE", -- items start with "* NOTE #1:"
     format = nil, -- function(annotation, index) -> string
     clear_after_export = false,
     file = ".annotations.md", -- relative to the project root

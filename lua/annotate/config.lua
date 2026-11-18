@@ -39,6 +39,8 @@ M.defaults = {
   export = {
     -- First line of the export, or false. "%d" is replaced with the count.
     header = "## Annotations (%d)",
+    -- Each item starts with "* <label> #<n>:".
+    label = "NOTE",
     -- Custom formatter: function(annotation, index) -> string. nil uses the default.
     format = nil,
     -- Archive and clear the project's annotations after a successful export.

@@ -112,30 +112,30 @@ test("export format", function()
   local expected = table.concat({
     "## Annotations (3)",
     "",
-    "1. **ISSUE**:",
-    "   > ```go",
-    "   > r.Client.Update(ctx, obj)",
-    "   > ```",
-    "   > source: pkg/reconcile.go:4:12-4:36",
+    "* NOTE #1:",
+    "  > ```go",
+    "  > r.Client.Update(ctx, obj)",
+    "  > ```",
+    "  > source: pkg/reconcile.go:4:12-4:36",
     "",
-    "   Should be a Patch.",
+    "  Should be a Patch.",
     "",
-    "2. **QUESTION**:",
-    "   > ```go",
-    "   > \treturn err",
-    "   > }",
-    "   > ```",
-    "   > source: pkg/reconcile.go:5-6",
+    "* NOTE #2:",
+    "  > ```go",
+    "  > \treturn err",
+    "  > }",
+    "  > ```",
+    "  > source: pkg/reconcile.go:5-6",
     "",
-    "   Why return here?",
+    "  Why return here?",
     "",
-    "3. **PRAISE**:",
-    "   > ```go",
-    "   > return nil",
-    "   > ```",
-    "   > source: pkg/reconcile.go:7",
+    "* NOTE #3:",
+    "  > ```go",
+    "  > return nil",
+    "  > ```",
+    "  > source: pkg/reconcile.go:7",
     "",
-    "   Nice.",
+    "  Nice.",
     "",
   }, "\n")
   eq(text, expected)
@@ -238,9 +238,9 @@ test("types are replaced, not merged", function()
   end, require("annotate.config").options.types)
   eq(ids, { "todo", "bug" })
   eq(require("annotate.config").type("todo").label, "TODO")
-  -- an annotation of a removed type still renders and exports
+  -- an annotation of a removed type still exports
   local text = annotate.build()
-  assert(text:find("**NOTE**", 1, true), "removed type falls back to its id")
+  assert(text:find("* NOTE #1:", 1, true), "removed type still exported")
   annotate.setup({ data_dir = tmp .. "/data", export = { register = "a" } })
 end)
 

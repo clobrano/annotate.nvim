@@ -53,20 +53,19 @@ end
 
 ---Default format:
 ---
----    1. **QUESTION**:
----       > ```go
----       > code
----       > ```
----       > source: path:12:5-12:30
+---    * NOTE #1:
+---      > ```go
+---      > code
+---      > ```
+---      > source: path:12:5-12:30
 ---
----       The comment.
+---      The comment.
 ---@param a Annotation
 ---@param i integer
 ---@return string
 function M.format(a, i)
-  local t = config.type(a.type)
-  local indent = string.rep(" ", #tostring(i) + 2)
-  local out = { string.format("%d. **%s**:", i, t and t.label or a.type:upper()) }
+  local indent = "  "
+  local out = { string.format("* %s #%d:", config.options.export.label, i) }
 
   local code = vim.split(a.code or "", "\n", { plain = true })
   if a.linewise then
