@@ -72,7 +72,12 @@ Map visual-mode keys with a Lua function as above, not with `:`: the function se
 :Annotate export [clipboard|file|tmux]
 :Annotate preview        " show the export in a split
 :Annotate clear          " archive and remove all annotations of the project
+:Annotate! export        " same as export, but only the current buffer's annotations
+:Annotate! preview       " same as preview, but only the current buffer's annotations
 ```
+
+With `clear_after_export`, the bang variants archive and remove only the
+exported annotations, not the whole project's.
 
 When several annotations overlap, edit and delete act on the smallest one under the cursor.
 

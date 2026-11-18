@@ -306,5 +306,57 @@ test("made-up filetypes get no fence tag", function()
   )
 end)
 
+test("buffer-scoped export, preview and archive", function()
+  -- start from an empty project store
+  vim.cmd("edit " .. repo .. "/pkg/reconcile.go")
+  annotate.clear()
+  -- one annotation in each of two files
+  vim.fn.cursor(4, 12)
+  table.insert(answers, { text = "in main" })
+  annotate.add()
+  vim.fn.writefile({ "package pkg", "", "func Other() {}" }, repo .. "/pkg/other.go")
+  vim.cmd("edit " .. repo .. "/pkg/other.go")
+  vim.bo.filetype = "go"
+  vim.fn.cursor(3, 1)
+  table.insert(answers, { text = "in other" })
+  annotate.add()
+  -- scoped to other.go: only its note
+  local text = annotate.build("buffer")
+  assert(text:find("in other", 1, true), text)
+  assert(not text:find("in main", 1, true), text)
+  eq(text:match("^## Annotations %((%d+)%)"), "1")
+  -- unscoped: both
+  text = annotate.build()
+  assert(text:find("in main", 1, true) and text:find("in other", 1, true), text)
+  -- scoped preview shows only the current buffer
+  annotate.preview("buffer")
+  local lines = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  assert(lines:find("in other", 1, true) and not lines:find("in main", 1, true), lines)
+  vim.cmd("close")
+  -- scoped export with clear_after_export archives only this buffer's note
+  annotate.setup({ data_dir = tmp .. "/data", export = { register = "a", clear_after_export = true } })
+  annotate.export("clipboard", "buffer")
+  local left = store.all(repo)
+  eq(#left, 1)
+  eq(left[1].text, "in main")
+  local archived = vim.json.decode(table.concat(vim.fn.readfile(
+    vim.fn.glob(tmp .. "/data/archive/*.json", false, true)[1]
+  ), "\n"))
+  eq(#archived.annotations, 1)
+  eq(archived.annotations[1].text, "in other")
+  annotate.setup({ data_dir = tmp .. "/data", export = { register = "a" } })
+end)
+
+test(":Annotate! export scopes to the buffer", function()
+  vim.cmd("edit " .. repo .. "/pkg/other.go")
+  vim.fn.cursor(3, 1)
+  table.insert(answers, { text = "bang note" })
+  annotate.add()
+  vim.cmd("Annotate! export")
+  local text = vim.fn.getreg("a")
+  assert(text:find("bang note", 1, true), text)
+  assert(not text:find("in main", 1, true), text)
+end)
+
 print(string.format("\n%d passed, %d failed", passed, failures))
 vim.cmd(failures == 0 and "qa!" or "cq!")

@@ -99,11 +99,28 @@ function M.remove(root, id)
   M.save(root)
 end
 
----Move every annotation of the project to data_dir/archive and empty the store.
+---Move annotations of the project to data_dir/archive and remove them from
+---the store. With a {subset}, only those annotations are moved.
 ---@param root string
+---@param subset? Annotation[]
 ---@return integer archived
-function M.archive(root)
+function M.archive(root, subset)
   local list = M.all(root)
+  if subset then
+    local ids = {}
+    for _, a in ipairs(subset) do
+      ids[a.id] = true
+    end
+    subset = vim.tbl_filter(function(a)
+      return ids[a.id]
+    end, list)
+    cache[root] = vim.tbl_filter(function(a)
+      return not ids[a.id]
+    end, list)
+    list = subset
+  else
+    cache[root] = {}
+  end
   local n = #list
   if n == 0 then
     return 0
@@ -116,7 +133,6 @@ function M.archive(root)
     f:write(vim.json.encode({ version = 1, root = root, annotations = list }))
     f:close()
   end
-  cache[root] = {}
   M.save(root)
   return n
 end

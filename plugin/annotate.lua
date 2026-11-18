@@ -16,11 +16,11 @@ local subcommands = {
   list = function()
     require("annotate").list()
   end,
-  export = function(args)
-    require("annotate").export(args[1])
+  export = function(args, _, bang)
+    require("annotate").export(args[1], bang and "buffer" or nil)
   end,
-  preview = function()
-    require("annotate").preview()
+  preview = function(_, _, bang)
+    require("annotate").preview(bang and "buffer" or nil)
   end,
   clear = function()
     require("annotate").clear()
@@ -34,10 +34,11 @@ vim.api.nvim_create_user_command("Annotate", function(opts)
   if not fn then
     return vim.notify("annotate: unknown subcommand " .. name, vim.log.levels.ERROR)
   end
-  fn(args, { line1 = opts.line1, line2 = opts.line2, range = opts.range })
+  fn(args, { line1 = opts.line1, line2 = opts.line2, range = opts.range }, opts.bang)
 end, {
   nargs = "*",
   range = true,
+  bang = true,
   desc = "Annotate code for an AI agent",
   complete = function(_, line)
     local words = vim.split(line, "%s+")

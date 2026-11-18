@@ -133,36 +133,47 @@ function M.list()
   vim.cmd("copen")
 end
 
----Markdown of the project's annotations.
----@return string|nil text, string root
-function M.build()
+---Markdown of the project's annotations, or only the current buffer's with
+---scope = "buffer".
+---@param scope? "buffer"
+---@return string|nil text, string root, Annotation[] list
+function M.build(scope)
   render.sync_all()
-  local root = current_root()
+  local src, reason = source.resolve()
+  local root = src and src.root or source.cwd_root()
   local list = store.all(root)
-  if #list == 0 then
-    return nil, root
+  if scope == "buffer" then
+    if not src then
+      notify("can't scope to this buffer: " .. reason, vim.log.levels.WARN)
+      return nil, root, list
+    end
+    list = store.for_key(root, src.key)
   end
-  return export.build(list), root
+  if #list == 0 then
+    return nil, root, list
+  end
+  return export.build(list), root, list
 end
 
 ---@param target? "clipboard"|"file"|"tmux"
-function M.export(target)
+---@param scope? "buffer"
+function M.export(target, scope)
   target = target or "clipboard"
   local deliver = export.targets[target]
   if not deliver then
     return notify("unknown export target " .. target, vim.log.levels.ERROR)
   end
-  local text, root = M.build()
+  local text, root, list = M.build(scope)
   if not text then
     return notify("no annotations to export")
   end
-  local n = #store.all(root)
+  local n = #list
   deliver(text, root, function(ok, msg)
     if not ok then
       return notify("export failed: " .. msg, vim.log.levels.ERROR)
     end
     if config.options.export.clear_after_export then
-      store.archive(root)
+      store.archive(root, scope == "buffer" and list or nil)
       render.render_all()
       msg = msg .. ", then archived"
     end
@@ -170,9 +181,11 @@ function M.export(target)
   end)
 end
 
----Show the export in a split.
-function M.preview()
-  local text = M.build()
+---Show the export in a split: the project's annotations, or only the current
+---buffer's with scope = "buffer".
+---@param scope? "buffer"
+function M.preview(scope)
+  local text = M.build(scope)
   if not text then
     return notify("no annotations to export")
   end
