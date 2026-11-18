@@ -358,5 +358,16 @@ test(":Annotate! export scopes to the buffer", function()
   assert(not text:find("in main", 1, true), text)
 end)
 
+test("tmux pane picker offers strings, not tables", function()
+  vim.env.TMUX_PANE = "%0"
+  local entries, pane_of = export._pane_entries(
+    "%0\t1.0\tmain\tnvim\teditor\n" ..
+    "%21\t1.1\tagents\tclaude\tagent pane\n"
+  )
+  vim.env.TMUX_PANE = nil
+  eq(entries, { "1.1  agents  claude  agent pane" })
+  eq(pane_of["1.1  agents  claude  agent pane"], "%21")
+end)
+
 print(string.format("\n%d passed, %d failed", passed, failures))
 vim.cmd(failures == 0 and "qa!" or "cq!")

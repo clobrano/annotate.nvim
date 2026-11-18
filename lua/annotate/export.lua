@@ -187,6 +187,25 @@ local function tmux_send(text, target, done)
   done(true, "pasted into tmux pane " .. target)
 end
 
+---Split `tmux list-panes` output into display strings and a map back to pane
+---ids. Strings, not tables, so any vim.ui.select implementation shows them
+---readably (some pickers ignore format_item).
+---@param out string
+---@return string[] entries, table<string,string> pane_of
+function M._pane_entries(out)
+  local entries = {}
+  local pane_of = {}
+  for line in out:gmatch("[^\n]+") do
+    local p = vim.split(line, "\t", { plain = true })
+    if p[1] ~= vim.env.TMUX_PANE then
+      local display = string.format("%s  %s  %s  %s", p[2], p[3], p[4], p[5])
+      table.insert(entries, display)
+      pane_of[display] = p[1]
+    end
+  end
+  return entries, pane_of
+end
+
 function M.targets.tmux(text, _, done)
   if vim.env.TMUX == nil or vim.env.TMUX == "" then
     return done(false, "not inside tmux")
@@ -202,26 +221,17 @@ function M.targets.tmux(text, _, done)
   if not out then
     return done(false, err)
   end
-  local panes = {}
-  for line in out:gmatch("[^\n]+") do
-    local p = vim.split(line, "\t", { plain = true })
-    if p[1] ~= vim.env.TMUX_PANE then
-      table.insert(panes, p)
-    end
-  end
-  if #panes == 0 then
+  local entries, pane_of = M._pane_entries(out)
+  if #entries == 0 then
     return done(false, "no other tmux pane in this session")
   end
-  vim.ui.select(panes, {
+  vim.ui.select(entries, {
     prompt = "Send annotations to pane",
-    format_item = function(p)
-      return string.format("%s  %s  %s  %s", p[2], p[3], p[4], p[5])
-    end,
-  }, function(p)
-    if not p then
+  }, function(display)
+    if not display then
       return done(false, "cancelled")
     end
-    tmux_send(text, p[1], done)
+    tmux_send(text, pane_of[display], done)
   end)
 end
 
