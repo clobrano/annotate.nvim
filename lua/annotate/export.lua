@@ -32,6 +32,22 @@ local function fence_for(code)
   return string.rep("`", longest + 1)
 end
 
+---The fence tag, but only for filetypes Neovim actually knows. A made-up
+---filetype (e.g. one a plugin set on a captured tmux pane) is noise.
+local known_filetypes ---@type table<string,true>?
+local function fence_lang(lang)
+  if not lang or lang == "" then
+    return
+  end
+  if not known_filetypes then
+    known_filetypes = {}
+    for _, ft in ipairs(vim.fn.getcompletion("", "filetype")) do
+      known_filetypes[ft] = true
+    end
+  end
+  return known_filetypes[lang] and lang or nil
+end
+
 ---Remove the indentation shared by all non-empty lines.
 local function dedent(lines)
   local min
@@ -79,7 +95,7 @@ function M.format(a, i)
   local function quote(s)
     table.insert(out, s == "" and (indent .. ">") or (indent .. "> " .. s))
   end
-  quote(fence .. (a.lang or ""))
+  quote(fence .. (fence_lang(a.lang) or ""))
   for _, l in ipairs(code) do
     quote(l)
   end

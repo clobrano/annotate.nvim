@@ -293,5 +293,18 @@ test("helpful reason for buffers it can't annotate", function()
   eq(reason, "not a file buffer (buftype=nofile)")
 end)
 
+test("made-up filetypes get no fence tag", function()
+  open_go()
+  vim.bo.filetype = "tmuxreview"
+  vim.fn.cursor(7, 1)
+  table.insert(answers, { text = "no tag" })
+  annotate.add()
+  local text = annotate.build()
+  assert(
+    text:find("\n  > ```\n  > return nil\n  > ```\n", 1, true),
+    "plain fence, no tag:\n" .. text
+  )
+end)
+
 print(string.format("\n%d passed, %d failed", passed, failures))
 vim.cmd(failures == 0 and "qa!" or "cq!")
