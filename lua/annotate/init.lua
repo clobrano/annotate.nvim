@@ -23,33 +23,9 @@ local function current_root()
   return src and src.root or source.cwd_root()
 end
 
-local function pick_type(type_id, cb)
-  if type_id then
-    if not config.type(type_id) then
-      return notify("unknown type " .. type_id, vim.log.levels.ERROR)
-    end
-    return cb(type_id)
-  end
-  local types = config.options.types
-  if #types == 1 then
-    return cb(types[1].id)
-  end
-  vim.ui.select(types, {
-    prompt = "Annotation type",
-    format_item = function(t)
-      return t.icon .. " " .. t.label
-    end,
-  }, function(t)
-    if t then
-      cb(t.id)
-    end
-  end)
-end
-
 ---Annotate the visual selection (characters or lines), or the cursor line.
----@param type_id? string skip the type picker
 ---@param cmd_range? table range from a user command
-function M.add(type_id, cmd_range)
+function M.add(cmd_range)
   local bufnr = vim.api.nvim_get_current_buf()
   local src, reason = source.resolve(bufnr)
   local range = selection.get(cmd_range)
@@ -65,12 +41,10 @@ function M.add(type_id, cmd_range)
   })
   a.code = render.text_at(bufnr, a)
 
-  pick_type(type_id, function(id)
-    popup.open(id, nil, function(final_type, text)
-      a.type, a.text = final_type, text
-      store.add(src.root, a)
-      render.render(bufnr)
-    end)
+  popup.open(nil, function(text)
+    a.text = text
+    store.add(src.root, a)
+    render.render(bufnr)
   end)
 end
 
@@ -80,8 +54,8 @@ function M.edit()
   if not a then
     return notify(reason, vim.log.levels.WARN)
   end
-  popup.open(a.type, a.text, function(type_id, text)
-    a.type, a.text = type_id, text
+  popup.open(a.text, function(text)
+    a.text = text
     store.save(src.root)
     render.render(bufnr)
   end)
@@ -129,12 +103,11 @@ function M.list()
   local root = current_root()
   local items = {}
   for _, a in ipairs(store.all(root)) do
-    local t = config.type(a.type)
     local item = {
       lnum = a.lnum,
       col = (a.col or 0) + 1,
       end_lnum = a.end_lnum,
-      text = string.format("[%s] %s", t and t.label or a.type:upper(), (a.text:gsub("\n", " "))),
+      text = (a.text:gsub("\n", " ")),
     }
     if a.url then
       -- Remote content: only reachable while its buffer exists.

@@ -48,9 +48,8 @@ annotate.setup({ data_dir = tmp .. "/data", export = { register = "a" } })
 
 -- Popup stub: answer with the next queued text.
 local answers = {}
-popup.open = function(type_id, _, cb)
-  local ans = table.remove(answers, 1)
-  cb(ans.type or type_id, ans.text)
+popup.open = function(_, cb)
+  cb(table.remove(answers, 1).text)
 end
 
 local function open_go()
@@ -69,7 +68,7 @@ test("charwise selection from :'<,'>Annotate", function()
   vim.fn.cursor(4, 12)
   vim.cmd("normal! vf)\27")
   table.insert(answers, { text = "Should be a Patch." })
-  vim.cmd("'<,'>Annotate add issue")
+  vim.cmd("'<,'>Annotate add")
   local list = store.all(repo)
   eq(#list, 1)
   local a = list[1]
@@ -96,10 +95,10 @@ test("linewise selection and cursor line", function()
   vim.fn.cursor(5, 1)
   vim.cmd("normal! Vj\27")
   table.insert(answers, { text = "Why return here?" })
-  vim.cmd("'<,'>Annotate add question")
+  vim.cmd("'<,'>Annotate add")
   vim.fn.cursor(7, 1)
   table.insert(answers, { text = "Nice." })
-  annotate.add("praise")
+  annotate.add()
   local list = store.all(repo)
   eq(#list, 3)
   eq(list[2].code, "\t\treturn err\n\t}")
@@ -154,7 +153,7 @@ test("renders range highlight, sign and box", function()
     end
   end
   assert(range, "range mark on line 4")
-  eq({ range[3], range[4].end_row, range[4].end_col, range[4].hl_group }, { 11, 3, 36, "DiagnosticVirtualTextError" })
+  eq({ range[3], range[4].end_row, range[4].end_col, range[4].hl_group }, { 11, 3, 36, "DiagnosticVirtualTextInfo" })
   local boxes = vim.tbl_filter(function(m)
     return m[4].virt_lines ~= nil
   end, marks)
@@ -211,36 +210,29 @@ test("edit and delete at the cursor", function()
   vim.fn.cursor(4, 1)
   vim.cmd("normal! fiv$\27")
   table.insert(answers, { text = "whole tail" })
-  vim.cmd("'<,'>Annotate add note")
+  vim.cmd("'<,'>Annotate add")
   vim.fn.cursor(4, 12)
   vim.cmd("normal! v\27")
   table.insert(answers, { text = "just r" })
-  vim.cmd("'<,'>Annotate add issue")
+  vim.cmd("'<,'>Annotate add")
   eq(#store.all(repo), 2)
   -- cursor on `r`: the smaller (inner) annotation wins
   vim.fn.cursor(4, 12)
-  table.insert(answers, { text = "edited", type = "suggestion" })
+  table.insert(answers, { text = "edited" })
   annotate.edit()
   local by_text = {}
   for _, a in ipairs(store.all(repo)) do
     by_text[a.text] = a
   end
-  assert(by_text.edited and by_text.edited.type == "suggestion", "inner one edited")
+  assert(by_text.edited and by_text["whole tail"], "inner one edited")
   annotate.delete()
   eq(#store.all(repo), 1)
   eq(store.all(repo)[1].text, "whole tail")
 end)
 
-test("types are replaced, not merged", function()
-  annotate.setup({ data_dir = tmp .. "/data", types = { { id = "todo" }, { id = "bug", label = "BUG!" } } })
-  local ids = vim.tbl_map(function(t)
-    return t.id
-  end, require("annotate.config").options.types)
-  eq(ids, { "todo", "bug" })
-  eq(require("annotate.config").type("todo").label, "TODO")
-  -- an annotation of a removed type still exports
-  local text = annotate.build()
-  assert(text:find("* NOTE #1:", 1, true), "removed type still exported")
+test("label setting", function()
+  annotate.setup({ data_dir = tmp .. "/data", label = "TODO", export = { header = false } })
+  eq(annotate.build():match("^[^\n]*"), "* TODO #1:")
   annotate.setup({ data_dir = tmp .. "/data", export = { register = "a" } })
 end)
 
@@ -270,7 +262,7 @@ test("gh-review buffers get a commit link", function()
   vim.fn.cursor(4, 10)
   vim.cmd("normal! v$\27")
   table.insert(answers, { text = "Default?" })
-  vim.cmd("'<,'>Annotate add question")
+  vim.cmd("'<,'>Annotate add")
   local remote
   for _, a in ipairs(store.all(repo)) do
     if a.url then

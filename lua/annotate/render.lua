@@ -155,13 +155,13 @@ function M.render(bufnr)
 
   for _, a in ipairs(list) do
     local found = anchor(bufnr, src.root, a)
-    local t = config.type(a.type) or { label = a.type:upper(), icon = "●", hl = "Comment", range_hl = "Visual" }
+    local t = opts.display
     local lnum = math.min(a.lnum, line_count)
     local end_lnum = math.min(math.max(a.end_lnum, lnum), line_count)
     local start_line = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, false)[1] or ""
     local end_line = vim.api.nvim_buf_get_lines(bufnr, end_lnum - 1, end_lnum, false)[1] or ""
 
-    local mark = { sign_text = opts.display.sign and t.icon or nil, sign_hl_group = t.hl, priority = 150 }
+    local mark = { sign_text = t.sign and t.icon or nil, sign_hl_group = t.hl, priority = 150 }
     if found then
       mark.hl_group = t.range_hl
       if a.linewise then
@@ -177,7 +177,7 @@ function M.render(bufnr)
     end
 
     if opts.display.box then
-      local label = found and t.label or (t.label .. " · text not found")
+      local label = found and opts.label or (opts.label .. " · text not found")
       pcall(vim.api.nvim_buf_set_extmark, bufnr, M.ns, end_lnum - 1, 0, {
         virt_lines = box(a.text, label, indent_of(start_line), t.hl),
       })

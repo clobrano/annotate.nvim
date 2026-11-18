@@ -8,7 +8,6 @@ local config = require("annotate.config")
 ---@field key string         source key (see source.lua)
 ---@field path string        path shown in the export
 ---@field url? string        web link without anchor, for buffers with no file on disk
----@field type string        type id
 ---@field text string        the comment
 ---@field code string        the annotated text, used to find the spot again
 ---@field lang string        filetype, for the code fence

@@ -4,8 +4,8 @@ end
 vim.g.loaded_annotate = true
 
 local subcommands = {
-  add = function(args, range)
-    require("annotate").add(args[1], range)
+  add = function(_, range)
+    require("annotate").add(range)
   end,
   edit = function()
     require("annotate").edit()
@@ -43,11 +43,6 @@ end, {
     local words = vim.split(line, "%s+")
     if #words <= 2 then
       return vim.tbl_keys(subcommands)
-    end
-    if words[2] == "add" then
-      return vim.tbl_map(function(t)
-        return t.id
-      end, require("annotate.config").options.types)
     end
     if words[2] == "export" then
       return { "clipboard", "file", "tmux" }

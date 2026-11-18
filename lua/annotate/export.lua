@@ -65,7 +65,7 @@ end
 ---@return string
 function M.format(a, i)
   local indent = "  "
-  local out = { string.format("* %s #%d:", config.options.export.label, i) }
+  local out = { string.format("* %s #%d:", config.options.label, i) }
 
   local code = vim.split(a.code or "", "\n", { plain = true })
   if a.linewise then
