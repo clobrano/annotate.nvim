@@ -1,0 +1,76 @@
+if vim.g.loaded_annotate then
+  return
+end
+vim.g.loaded_annotate = true
+
+local subcommands = {
+  add = function(args, range)
+    require("annotate").add(args[1], range)
+  end,
+  edit = function()
+    require("annotate").edit()
+  end,
+  delete = function()
+    require("annotate").delete()
+  end,
+  list = function()
+    require("annotate").list()
+  end,
+  export = function(args)
+    require("annotate").export(args[1])
+  end,
+  preview = function()
+    require("annotate").preview()
+  end,
+  clear = function()
+    require("annotate").clear()
+  end,
+}
+
+vim.api.nvim_create_user_command("Annotate", function(opts)
+  local args = vim.deepcopy(opts.fargs)
+  local name = table.remove(args, 1) or "add"
+  local fn = subcommands[name]
+  if not fn then
+    return vim.notify("annotate: unknown subcommand " .. name, vim.log.levels.ERROR)
+  end
+  fn(args, { line1 = opts.line1, line2 = opts.line2, range = opts.range })
+end, {
+  nargs = "*",
+  range = true,
+  desc = "Annotate code for an AI agent",
+  complete = function(_, line)
+    local words = vim.split(line, "%s+")
+    if #words <= 2 then
+      return vim.tbl_keys(subcommands)
+    end
+    if words[2] == "add" then
+      return vim.tbl_map(function(t)
+        return t.id
+      end, require("annotate.config").options.types)
+    end
+    if words[2] == "export" then
+      return { "clipboard", "file", "tmux" }
+    end
+    return {}
+  end,
+})
+
+local group = vim.api.nvim_create_augroup("annotate", { clear = true })
+
+vim.api.nvim_create_autocmd("BufWinEnter", {
+  group = group,
+  callback = function(ev)
+    -- Plugins like gh-review fill their buffers right after showing them.
+    vim.schedule(function()
+      require("annotate.render").render(ev.buf)
+    end)
+  end,
+})
+
+vim.api.nvim_create_autocmd({ "BufWritePost", "BufLeave" }, {
+  group = group,
+  callback = function(ev)
+    require("annotate.render").sync(ev.buf)
+  end,
+})
