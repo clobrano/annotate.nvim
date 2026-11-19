@@ -96,6 +96,7 @@ require("annotate").setup({
     icon = "▍",
     hl = "DiagnosticInfo", -- sign and box
     range_hl = "DiagnosticVirtualTextInfo", -- the annotated text
+    wrap = 60, -- wrap the comment box text at this display width; false = never wrap
   },
   popup = { width = 70, height = 6, border = "rounded", submit = "<C-s>", cancel = "q" },
   data_dir = vim.fn.stdpath("data") .. "/annotate",

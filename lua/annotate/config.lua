@@ -11,6 +11,7 @@ M.defaults = {
     icon = "▍", -- sign column icon
     hl = "DiagnosticInfo", -- sign and box
     range_hl = "DiagnosticVirtualTextInfo", -- the annotated text
+    wrap = 60, -- wrap the comment box text at this display width; false = never wrap
   },
 
   popup = {

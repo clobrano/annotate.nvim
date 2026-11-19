@@ -107,13 +107,67 @@ local function anchor(bufnr, root, a)
   return true
 end
 
+---Longest prefix of `word` that fits in `width` display cells, at least one
+---character. Returns the prefix and the rest.
+---@return string prefix, string rest
+local function take_prefix(word, width)
+  local prefix = ""
+  for _, code in utf8.codes(word) do
+    local ch = utf8.char(code)
+    if prefix ~= "" and vim.fn.strdisplaywidth(prefix) + vim.fn.strdisplaywidth(ch) > width then
+      return prefix, word:sub(#prefix + 1)
+    end
+    prefix = prefix .. ch
+  end
+  return prefix, ""
+end
+
+---Greedy word wrap at `width` display columns. A word longer than the width
+---is hard-split.
+---@param line string
+---@param width integer
+---@return string[]
+local function wrap_line(line, width)
+  local out = {}
+  local cur = ""
+  local function flush()
+    table.insert(out, cur)
+    cur = ""
+  end
+  for word in line:gmatch("%S+") do
+    if cur ~= "" and vim.fn.strdisplaywidth(cur) + 1 + vim.fn.strdisplaywidth(word) > width then
+      flush()
+    end
+    while vim.fn.strdisplaywidth(word) > width do
+      if cur ~= "" then
+        flush()
+      end
+      local prefix
+      prefix, word = take_prefix(word, width)
+      table.insert(out, prefix)
+    end
+    cur = cur == "" and word or (cur .. " " .. word)
+  end
+  flush()
+  return out
+end
+
 ---@param text string
 ---@param label string
 ---@param indent integer
 ---@param hl string
 local function box(text, label, indent, hl)
   local pad = string.rep(" ", indent)
-  local body = vim.split(text, "\n", { plain = true })
+  local body = {}
+  local wrap = config.options.display.wrap
+  if wrap then
+    local w = math.max(16, wrap - indent)
+    for _, l in ipairs(vim.split(text, "\n", { plain = true })) do
+      vim.list_extend(body, wrap_line(l, w))
+    end
+  else
+    body = vim.split(text, "\n", { plain = true })
+  end
   local width = vim.fn.strdisplaywidth(label) + 4
   for _, l in ipairs(body) do
     width = math.max(width, vim.fn.strdisplaywidth(l))

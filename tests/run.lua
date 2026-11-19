@@ -369,5 +369,34 @@ test("tmux pane picker offers strings, not tables", function()
   eq(pane_of["1.1  agents  claude  agent pane"], "%21")
 end)
 
+test("box wraps long comments", function()
+  open_go()
+  vim.fn.cursor(7, 1) -- "}", no indent
+  table.insert(answers, { text = string.rep("word ", 30) })
+  annotate.add()
+  local render_ns = require("annotate.render").ns
+  local marks = vim.api.nvim_buf_get_extmarks(0, render_ns, 0, -1, { details = true })
+  local box_lines
+  for _, m in ipairs(marks) do
+    if m[4].virt_lines then
+      box_lines = m[4].virt_lines
+    end
+  end
+  assert(box_lines, "box rendered")
+  -- header + wrapped body + footer
+  assert(#box_lines > 3, "expected several body lines, got " .. #box_lines)
+  local words = {}
+  for i = 2, #box_lines - 1 do
+    local text = box_lines[i][1][1]
+    local w = vim.fn.strdisplaywidth(text)
+    assert(w <= 64, ("body line too wide (%d): %s"):format(w, text))
+    -- strip borders: pad .. "│ " .. content .. " │"
+    for word in (text:match("│ (.-) │$") or ""):gmatch("%S+") do
+      table.insert(words, word)
+    end
+  end
+  eq(#words, 30, "all words kept across wrapped lines")
+end)
+
 print(string.format("\n%d passed, %d failed", passed, failures))
 vim.cmd(failures == 0 and "qa!" or "cq!")
