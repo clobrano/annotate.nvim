@@ -178,7 +178,7 @@ function M.export(target, scope)
       msg = msg .. ", then archived"
     end
     notify(string.format("%d annotation%s %s", n, n == 1 and "" or "s", msg))
-  end)
+  end, n)
 end
 
 ---Show the export in a split: the project's annotations, or only the current

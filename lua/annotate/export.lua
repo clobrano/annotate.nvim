@@ -206,12 +206,23 @@ function M._pane_entries(out)
   return entries, pane_of
 end
 
-function M.targets.tmux(text, _, done)
+---Ask before pasting into a pane chosen in advance. Tests stub this.
+---@param msg string
+---@return boolean send
+function M._confirm(msg)
+  return vim.fn.confirm(msg, "&Send\n&Cancel") == 1
+end
+
+function M.targets.tmux(text, _, done, n)
   if vim.env.TMUX == nil or vim.env.TMUX == "" then
     return done(false, "not inside tmux")
   end
+  local plural = n == 1 and "" or "s"
   local target = config.options.tmux.target
   if target then
+    if not M._confirm(string.format("Send %d annotation%s to pane %s?", n, plural, target)) then
+      return done(false, "cancelled")
+    end
     return tmux_send(text, target, done)
   end
   local out, err = run({
@@ -226,7 +237,7 @@ function M.targets.tmux(text, _, done)
     return done(false, "no other tmux pane in this session")
   end
   vim.ui.select(entries, {
-    prompt = "Send annotations to pane",
+    prompt = string.format("Send %d annotation%s to pane", n, plural),
   }, function(display)
     if not display then
       return done(false, "cancelled")

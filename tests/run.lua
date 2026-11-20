@@ -369,6 +369,28 @@ test("tmux pane picker offers strings, not tables", function()
   eq(pane_of["1.1  agents  claude  agent pane"], "%21")
 end)
 
+test("tmux export asks for a configured pane, with the count", function()
+  local orig_confirm = export._confirm
+  annotate.setup({ data_dir = tmp .. "/data", export = { register = "a" }, tmux = { target = "%5" } })
+  vim.env.TMUX = "/tmp/sock,1,0"
+  local asked
+  export._confirm = function(msg)
+    asked = msg
+    return false
+  end
+  for _, case in ipairs({ { 3, "Send 3 annotations to pane %5?" }, { 1, "Send 1 annotation to pane %5?" } }) do
+    local ok, msg
+    export.targets.tmux("text", repo, function(o, m)
+      ok, msg = o, m
+    end, case[1])
+    eq(asked, case[2])
+    eq({ ok, msg }, { false, "cancelled" }, "cancel aborts before tmux runs")
+  end
+  export._confirm = orig_confirm
+  vim.env.TMUX = nil
+  annotate.setup({ data_dir = tmp .. "/data", export = { register = "a" } })
+end)
+
 test("box wraps long comments", function()
   open_go()
   vim.fn.cursor(7, 1) -- "}", no indent

@@ -79,6 +79,10 @@ Map visual-mode keys with a Lua function as above, not with `:`: the function se
 With `clear_after_export`, the bang variants archive and remove only the
 exported annotations, not the whole project's.
 
+Exporting to tmux shows the annotation count before anything is sent: the
+pane picker prompt includes it, and a configured `tmux.target` gets a
+confirm dialog first, so old forgotten annotations don't slip through.
+
 When several annotations overlap, edit and delete act on the smallest one under the cursor.
 
 In the popup: `<C-s>` saves, `q` or `<Esc>` cancels.
