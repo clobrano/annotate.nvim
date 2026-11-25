@@ -112,16 +112,7 @@ end
 ---@param list Annotation[]
 ---@return string
 function M.build(list)
-  list = vim.list_slice(list)
-  table.sort(list, function(x, y)
-    if x.path ~= y.path then
-      return x.path < y.path
-    end
-    if x.lnum ~= y.lnum then
-      return x.lnum < y.lnum
-    end
-    return (x.col or 0) < (y.col or 0)
-  end)
+  -- The store keeps creation order; use it as-is.
   local opts = config.options.export
   local fmt = opts.format or M.format
   local parts = {}
