@@ -104,6 +104,7 @@ require("annotate").setup({
   },
   popup = { width = 70, height = 6, border = "rounded", submit = "<C-s>", cancel = "q" },
   data_dir = vim.fn.stdpath("data") .. "/annotate",
+  ephemeral_filetypes = { tmuxreview = true }, -- memory only, never written to disk
   export = {
     header = "## Annotations (%d)", -- or false
     format = nil, -- function(annotation, index) -> string
@@ -155,6 +156,12 @@ resolvers = {
 ## Storage
 
 One JSON file per project root in `data_dir`. `:Annotate clear` (and `clear_after_export`) moves it to `data_dir/archive/`.
+
+Buffers whose filetype is in `ephemeral_filetypes` (by default the `tmuxreview`
+pane captures of [tmux-review](https://github.com/clobrano/tmux-review)) are the
+exception: their annotations live only for the Neovim session, nothing is
+read from or written to `data_dir`. Each capture is throwaway, so notes on it
+would only pile up in the store of the shared capture directory.
 
 If an annotation's text can't be found when the buffer opens, it stays where it was and its box says "text not found".
 

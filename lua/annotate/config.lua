@@ -25,6 +25,11 @@ M.defaults = {
   -- Where stores live (one JSON file per project root).
   data_dir = vim.fn.stdpath("data") .. "/annotate",
 
+  -- Filetypes whose annotations live only for this Neovim session:
+  -- nothing is written to data_dir. Use this for throwaway buffers, e.g.
+  -- tmux-review pane captures (ft=tmuxreview).
+  ephemeral_filetypes = { tmuxreview = true },
+
   export = {
     -- First line of the export, or false. "%d" is replaced with the count.
     header = "## Annotations (%d)",

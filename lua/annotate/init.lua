@@ -32,6 +32,9 @@ function M.add(cmd_range)
   if not src then
     return notify("can't annotate this buffer: " .. reason, vim.log.levels.WARN)
   end
+  if config.options.ephemeral_filetypes[vim.bo[bufnr].filetype] then
+    store.set_ephemeral(src.root)
+  end
   render.sync(bufnr)
   local a = vim.tbl_extend("force", range, {
     key = src.key,

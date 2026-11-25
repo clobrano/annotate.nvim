@@ -20,6 +20,8 @@ local config = require("annotate.config")
 
 ---@type table<string, Annotation[]> annotations by root
 local cache = {}
+---@type table<string, true> roots kept in memory only, never written to disk
+local ephemeral = {}
 local counter = 0
 
 local function file_for(root)
@@ -33,14 +35,16 @@ function M.all(root)
     return cache[root]
   end
   local list = {}
-  local f = io.open(file_for(root), "r")
-  if f then
-    local ok, data = pcall(vim.json.decode, f:read("*a"))
-    f:close()
-    if ok and type(data) == "table" and type(data.annotations) == "table" then
-      list = data.annotations
-    else
-      vim.notify("annotate: could not read " .. file_for(root), vim.log.levels.ERROR)
+  if not ephemeral[root] then
+    local f = io.open(file_for(root), "r")
+    if f then
+      local ok, data = pcall(vim.json.decode, f:read("*a"))
+      f:close()
+      if ok and type(data) == "table" and type(data.annotations) == "table" then
+        list = data.annotations
+      else
+        vim.notify("annotate: could not read " .. file_for(root), vim.log.levels.ERROR)
+      end
     end
   end
   cache[root] = list
@@ -49,6 +53,9 @@ end
 
 ---@param root string
 function M.save(root)
+  if ephemeral[root] then
+    return
+  end
   local list = cache[root] or {}
   vim.fn.mkdir(config.options.data_dir, "p")
   local path = file_for(root)
@@ -125,6 +132,9 @@ function M.archive(root, subset)
   if n == 0 then
     return 0
   end
+  if ephemeral[root] then
+    return n
+  end
   local dir = config.options.data_dir .. "/archive"
   vim.fn.mkdir(dir, "p")
   local name = vim.fn.fnamemodify(file_for(root), ":t:r")
@@ -137,9 +147,23 @@ function M.archive(root, subset)
   return n
 end
 
+---Annotations of this root live only for the current Neovim session:
+---nothing is read from or written to data_dir.
+---@param root string
+function M.set_ephemeral(root)
+  ephemeral[root] = true
+end
+
+---@param root string
+---@return boolean
+function M.is_ephemeral(root)
+  return ephemeral[root] == true
+end
+
 -- For tests.
 function M._reset()
   cache = {}
+  ephemeral = {}
 end
 
 return M

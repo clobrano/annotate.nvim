@@ -307,8 +307,10 @@ test("made-up filetypes get no fence tag", function()
 end)
 
 test("buffer-scoped export, preview and archive", function()
-  -- start from an empty project store
+  -- start from an empty project store and a clean archive dir
+  vim.fn.delete(tmp .. "/data/archive", "rf")
   vim.cmd("edit " .. repo .. "/pkg/reconcile.go")
+  vim.bo.filetype = "go"
   annotate.clear()
   -- one annotation in each of two files
   vim.fn.cursor(4, 12)
@@ -418,6 +420,30 @@ test("box wraps long comments", function()
     end
   end
   eq(#words, 30, "all words kept across wrapped lines")
+end)
+
+test("ephemeral filetypes are kept in memory only", function()
+  vim.fn.delete(tmp .. "/data", "rf")
+  open_go()
+  vim.bo.filetype = "tmuxreview"
+  vim.fn.cursor(7, 1)
+  table.insert(answers, { text = "session note" })
+  annotate.add()
+  eq(#store.all(repo), 1)
+  eq(store.is_ephemeral(repo), true)
+  -- nothing written to disk
+  eq(#vim.fn.glob(tmp .. "/data/*.json", false, true), 0)
+  -- a fresh session starts empty: the disk file was never there
+  store._reset()
+  eq(#store.all(repo), 0)
+  -- clear archives in memory only, no archive file either
+  vim.bo.filetype = "tmuxreview"
+  vim.fn.cursor(7, 1)
+  table.insert(answers, { text = "again" })
+  annotate.add()
+  annotate.clear()
+  eq(#store.all(repo), 0)
+  eq(#vim.fn.glob(tmp .. "/data/archive/*.json", false, true), 0)
 end)
 
 print(string.format("\n%d passed, %d failed", passed, failures))
