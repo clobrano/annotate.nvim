@@ -7,6 +7,7 @@ vim.opt.number = true
 vim.opt.signcolumn = "yes"
 vim.opt.termguicolors = true
 vim.opt.swapfile = false
+vim.opt.hlsearch = false -- keep search matches from lingering in the recording
 vim.opt.shortmess:append("I")
 vim.opt.laststatus = 3
 
