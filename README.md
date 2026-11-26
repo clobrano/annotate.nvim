@@ -8,6 +8,8 @@ Leave annotations on exact pieces of code, then hand them to an AI agent as one 
 - Works in [gh-review.nvim](https://github.com/gh-tui-tools/gh-review.nvim) diff buffers: the source becomes a GitHub link at the PR commit
 - No dependencies. Neovim 0.9+.
 
+![demo](demo/demo.gif)
+
 ## Export format
 
 ````markdown
@@ -173,3 +175,14 @@ If an annotation's text can't be found when the buffer opens, it stays where it 
 ```sh
 nvim --headless -u NONE -c "luafile tests/run.lua"
 ```
+
+## Demo
+
+The GIF above is recorded with [VHS](https://github.com/charmbracelet/vhs) from `demo/demo.tape`.
+It runs Neovim with `demo/init.lua` on a copy of `demo/reconcile.go` in a throwaway git repo, so your own annotations are not touched:
+
+```sh
+vhs demo/demo.tape
+```
+
+The `demo` workflow renders it too (on demand, and on pull requests that change `demo/`) and uploads `demo.gif` as an artifact.

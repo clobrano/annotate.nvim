@@ -1,0 +1,25 @@
+name: demo
+
+# Renders demo/demo.tape and uploads demo.gif as a workflow artifact.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - demo/**
+
+jobs:
+  vhs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+      - uses: charmbracelet/vhs-action@v2
+        with:
+          path: demo/demo.tape
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo
+          path: demo/demo.gif
