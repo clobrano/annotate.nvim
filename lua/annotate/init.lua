@@ -81,6 +81,8 @@ function M.jump(dir)
   if not src then
     return
   end
+  -- Positions in the store are stale until synced from the buffer's extmarks.
+  render.sync(vim.api.nvim_get_current_buf())
   local cur = vim.api.nvim_win_get_cursor(0)
   local list = store.for_key(src.root, src.key)
   table.sort(list, function(x, y)
