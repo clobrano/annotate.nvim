@@ -25,6 +25,13 @@ M.defaults = {
   -- Where stores live (one JSON file per project root).
   data_dir = vim.fn.stdpath("data") .. "/annotate",
 
+  -- How :Annotate list is shown: "auto" uses telescope or fzf-lua when one
+  -- is installed (and falls back to quickfix), "quickfix" (or false) always
+  -- uses the quickfix window.
+  list = {
+    picker = "auto",
+  },
+
   -- Filetypes whose annotations live only for this Neovim session:
   -- nothing is written to data_dir. Use this for throwaway buffers, e.g.
   -- tmux-review pane captures (ft=tmuxreview).

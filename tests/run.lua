@@ -446,5 +446,85 @@ test("ephemeral filetypes are kept in memory only", function()
   eq(#vim.fn.glob(tmp .. "/data/archive/*.json", false, true), 0)
 end)
 
+test("list uses telescope when installed", function()
+  vim.fn.delete(tmp .. "/data", "rf")
+  open_go()
+  vim.fn.cursor(4, 12)
+  vim.cmd("normal! vf)\27")
+  table.insert(answers, { text = "Should be a Patch." })
+  vim.cmd("'<,'>Annotate add")
+
+  vim.cmd("cd " .. repo)
+  local captured
+  package.loaded["telescope.pickers"] = {
+    new = function(_, opts)
+      captured = opts
+      return { find = function() end }
+    end,
+  }
+  package.loaded["telescope.finders"] = { new_table = function(o) return o end }
+  package.loaded["telescope.previewers"] = { vim_buffer_cat = { new = function() return {} end } }
+  package.loaded["telescope.config"] = { values = { generic_sorter = function() return {} end } }
+  annotate.list()
+  package.loaded["telescope.pickers"] = nil
+  package.loaded["telescope.finders"] = nil
+  package.loaded["telescope.previewers"] = nil
+  package.loaded["telescope.config"] = nil
+  assert(captured, "telescope got the list")
+  eq(captured.prompt_title, "Annotations")
+  local items = captured.finder.results
+  eq(#items, 1)
+  local entry = captured.finder.entry_maker(items[1])
+  eq(entry.display, "pkg/reconcile.go:4: Should be a Patch.")
+  eq(#vim.fn.getqflist(), 0, "quickfix stays empty")
+end)
+
+test("picked items jump to the file or open the link", function()
+  local picker = require("annotate.picker")
+  vim.cmd("enew")
+  picker._jump({ filename = repo .. "/pkg/reconcile.go", lnum = 4, col = 12, text = "x" })
+  eq(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "reconcile.go")
+  eq(vim.api.nvim_win_get_cursor(0), { 4, 11 })
+
+  local orig_open = vim.ui.open
+  local opened
+  vim.ui.open = function(url)
+    opened = url
+  end
+  picker._jump({ url = "https://github.com/org/repo/blob/sha/pkg/x.go#L4", text = "x" })
+  vim.ui.open = orig_open
+  eq(opened, "https://github.com/org/repo/blob/sha/pkg/x.go#L4")
+end)
+
+test("list falls back to fzf-lua, then quickfix", function()
+  local captured
+  package.loaded["fzf-lua"] = {
+    fzf_exec = function(entries, opts)
+      captured = { entries = entries, opts = opts }
+    end,
+  }
+  annotate.list()
+  package.loaded["fzf-lua"] = nil
+  assert(captured, "fzf-lua got the list")
+  eq(captured.entries, { "pkg/reconcile.go:4: Should be a Patch." })
+
+  annotate.list()
+  local qf = vim.fn.getqflist()
+  eq(#qf, 1)
+  eq(qf[1].text, "Should be a Patch.")
+  eq({ qf[1].lnum, qf[1].col }, { 4, 12 })
+end)
+
+test("list.picker = quickfix skips installed pickers", function()
+  package.loaded["telescope.pickers"] = {
+    new = function() error("telescope should not open") end,
+  }
+  annotate.setup({ data_dir = tmp .. "/data", list = { picker = "quickfix" } })
+  annotate.list()
+  package.loaded["telescope.pickers"] = nil
+  annotate.setup({ data_dir = tmp .. "/data" })
+  eq(vim.fn.getqflist({ size = 0 }).size, 1)
+end)
+
 print(string.format("\n%d passed, %d failed", passed, failures))
 vim.cmd(failures == 0 and "qa!" or "cq!")

@@ -7,6 +7,7 @@ local render = require("annotate.render")
 local selection = require("annotate.selection")
 local popup = require("annotate.popup")
 local export = require("annotate.export")
+local picker = require("annotate.picker")
 
 local function notify(msg, level)
   vim.notify("annotate: " .. msg, level or vim.log.levels.INFO)
@@ -100,10 +101,12 @@ function M.jump(dir)
   end
 end
 
----All annotations of the project in the quickfix list.
-function M.list()
-  render.sync_all()
-  local root = current_root()
+---Quickfix/picker items for all annotations of the project. Remote
+---annotations whose buffer is no longer open are marked invalid and get a
+---url, so pickers can open their link in the browser.
+---@param root string
+---@return table[] items
+local function list_items(root)
   local items = {}
   for _, a in ipairs(store.all(root)) do
     local item = {
@@ -118,19 +121,33 @@ function M.list()
         local s = vim.api.nvim_buf_is_loaded(b) and source.resolve(b)
         if s and s.key == a.key then
           item.bufnr = b
+          item.bufname = vim.api.nvim_buf_get_name(b)
         end
       end
       if not item.bufnr then
         item.text = item.text .. "  (" .. export.source(a) .. ")"
         item.valid = 0
+        item.url = export.source(a)
       end
     else
       item.filename = root .. "/" .. a.path
     end
     table.insert(items, item)
   end
+  return items
+end
+
+---All annotations of the project, in a picker (telescope or fzf-lua when
+---installed, list.picker permitting) or the quickfix list.
+function M.list()
+  render.sync_all()
+  local root = current_root()
+  local items = list_items(root)
   if #items == 0 then
     return notify("no annotations in " .. vim.fn.fnamemodify(root, ":~"))
+  end
+  if picker.try(items, "Annotations") then
+    return
   end
   vim.fn.setqflist({}, " ", { title = "Annotations", items = items })
   vim.cmd("copen")

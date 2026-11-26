@@ -68,7 +68,7 @@ Map visual-mode keys with a Lua function as above, not with `:`: the function se
 :Annotate [add]          " annotate the selection or the cursor line (:'<,'>Annotate add for a range)
 :Annotate edit           " edit the annotation under the cursor
 :Annotate delete         " delete the annotation under the cursor
-:Annotate list           " all annotations of the project in the quickfix list
+:Annotate list           " all annotations of the project: telescope or fzf-lua when installed, else the quickfix list
 :Annotate export [clipboard|file|tmux]
 :Annotate preview        " show the export in a split
 :Annotate clear          " archive and remove all annotations of the project
@@ -104,6 +104,9 @@ require("annotate").setup({
   },
   popup = { width = 70, height = 6, border = "rounded", submit = "<C-s>", cancel = "q" },
   data_dir = vim.fn.stdpath("data") .. "/annotate",
+  list = {
+    picker = "auto", -- "auto", "quickfix" (or false); "auto" uses telescope or fzf-lua when installed
+  },
   ephemeral_filetypes = { tmuxreview = true }, -- memory only, never written to disk
   export = {
     header = "## Annotations (%d)", -- or false
