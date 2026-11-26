@@ -3,6 +3,7 @@
 local M = {}
 
 local config = require("annotate.config")
+local export = require("annotate.export")
 
 ---One line per annotation: "where  comment". The where part is relative
 ---path:line for files, buffer name:line for loaded remote buffers. Remote
@@ -62,7 +63,18 @@ local function telescope(items, title)
         end,
       }),
       sorter = conf.generic_sorter({}),
-      previewer = previewers.vim_buffer_cat.new({}),
+      previewer = previewers.new_buffer_previewer({
+        title = "Annotation",
+        define_preview = function(self, entry)
+          local a = entry.value.annotation
+          local lines = { export.source(a), "" }
+          vim.list_extend(lines, vim.split(a.code or "", "\n", { plain = true }))
+          table.insert(lines, "")
+          vim.list_extend(lines, vim.split(a.text, "\n", { plain = true }))
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+          vim.bo[self.state.bufnr].filetype = a.lang or ""
+        end,
+      }),
       attach_mappings = function(prompt_bufnr)
         local actions = require("telescope.actions")
         local state = require("telescope.actions.state")

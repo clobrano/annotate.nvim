@@ -463,7 +463,7 @@ test("list uses telescope when installed", function()
     end,
   }
   package.loaded["telescope.finders"] = { new_table = function(o) return o end }
-  package.loaded["telescope.previewers"] = { vim_buffer_cat = { new = function() return {} end } }
+  package.loaded["telescope.previewers"] = { new_buffer_previewer = function(o) return o end }
   package.loaded["telescope.config"] = { values = { generic_sorter = function() return {} end } }
   annotate.list()
   package.loaded["telescope.pickers"] = nil
@@ -477,6 +477,18 @@ test("list uses telescope when installed", function()
   local entry = captured.finder.entry_maker(items[1])
   eq(entry.display, "pkg/reconcile.go:4: Should be a Patch.")
   eq(#vim.fn.getqflist(), 0, "quickfix stays empty")
+
+  -- the preview shows the annotation itself: source, code, comment
+  local preview_buf = vim.api.nvim_create_buf(false, true)
+  captured.previewer.define_preview({ state = { bufnr = preview_buf } }, entry)
+  eq(vim.api.nvim_buf_get_lines(preview_buf, 0, -1, false), {
+    "pkg/reconcile.go:4:12-4:36",
+    "",
+    "r.Client.Update(ctx, obj)",
+    "",
+    "Should be a Patch.",
+  })
+  eq(vim.bo[preview_buf].filetype, "go")
 end)
 
 test("picked items jump to the file or open the link", function()

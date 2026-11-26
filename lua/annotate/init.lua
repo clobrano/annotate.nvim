@@ -114,6 +114,7 @@ local function list_items(root)
       col = (a.col or 0) + 1,
       end_lnum = a.end_lnum,
       text = (a.text:gsub("\n", " ")),
+      annotation = a,
     }
     if a.url then
       -- Remote content: only reachable while its buffer exists.
